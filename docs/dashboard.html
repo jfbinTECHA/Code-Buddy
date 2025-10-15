@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Code-Buddy / Bytebot – Diagrams Dashboard</title>
+<style>
+  :root { --bg:#0b0c0f; --fg:#e5e7eb; --card:#111318; --accent:#7dd3fc; }
+  [data-theme="light"] { --bg:#ffffff; --fg:#0b0c0f; --card:#f5f7fb; --accent:#0ea5e9; }
+  body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; background:var(--bg); color:var(--fg); }
+  header { padding:20px; border-bottom:1px solid rgba(125,211,252,.25); display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+  h1 { font-size:1.25rem; margin:0; }
+  .btn { border:1px solid rgba(125,211,252,.35); background:transparent; color:var(--fg); padding:8px 12px; border-radius:10px; cursor:pointer; }
+  .btn:hover { border-color:var(--accent); }
+  .container { padding:20px; max-width:1200px; margin:0 auto; }
+  .tabs { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+  .tab { padding:8px 12px; border-radius:10px; border:1px solid rgba(125,211,252,.25); cursor:pointer; }
+  .tab.active { background:var(--card); border-color:var(--accent); }
+  .panel { display:none; background:var(--card); padding:10px 10px 20px; border-radius:12px; overflow:auto; }
+  .panel.active { display:block; }
+  .note { font-size:.9rem; opacity:.8; margin-top:10px; }
+  footer { opacity:.75; padding:16px 20px; border-top:1px solid rgba(125,211,252,.25); font-size:.9rem; }
+</style>
+</head>
+<body data-theme="dark">
+  <header>
+    <h1>Code-Buddy / Bytebot – Diagrams Dashboard</h1>
+    <button id="toggleTheme" class="btn" title="Toggle theme">Toggle Theme</button>
+    <button id="rerender" class="btn" title="Re-render diagrams">Re-render</button>
+  </header>
+
+  <div class="container">
+    <div class="tabs">
+      <div class="tab active" data-tab="arch">Architecture</div>
+      <div class="tab" data-tab="flow">Data Flow</div>
+      <div class="tab" data-tab="net">Network Map</div>
+    </div>
+
+    <section id="arch" class="panel active">
+      <div class="mermaid">
+        %%{init: {'theme': 'neutral'}}%%
+        graph TD
+            subgraph Bytebot System
+                UI[Bytebot UI (Port 9992)]
+                Agent[Bytebot Agent (Port 9991)]
+                Desktop[Bytebot Desktop (Port 9990)]
+                Postgres[(PostgreSQL DB 5432)]
+                Redis[(Redis Cache 6379)]
+                Chroma[(Chroma Vector DB 8001)]
+                Exporter[(Redis Exporter 9121)]
+            end
+            UI --> Agent
+            Agent --> Desktop
+            Agent --> Redis
+            Agent --> Postgres
+            Agent --> Chroma
+            Redis --> Exporter
+      </div>
+      <p class="note">High-level view of services and dependencies.</p>
+    </section>
+
+    <section id="flow" class="panel">
+      <div class="mermaid">
+        %%{init: {'theme': 'neutral'}}%%
+        sequenceDiagram
+          autonumber
+          participant User
+          participant UI as Bytebot UI (9992)
+          participant Agent as Bytebot Agent (9991)
+          participant DB as PostgreSQL (5432)
+          participant Redis as Redis (6379)
+          participant Chroma as Chroma (8001)
+          User->>UI: Task or command
+          UI->>Agent: REST/WebSocket
+          Agent->>Redis: Cache state / queues
+          Agent->>DB: Persist logs & data
+          Agent->>Chroma: Store/Retrieve embeddings
+          Agent-->>UI: Response payload
+          UI-->>User: Render result
+      </div>
+      <p class="note">End-to-end path from user input to system response.</p>
+    </section>
+
+    <section id="net" class="panel">
+      <div class="mermaid">
+        %%{init: {'theme': 'neutral'}}%%
+        graph LR
+          subgraph LocalHost [Localhost - 192.168.1.104]
+            UI[Bytebot UI<br/>Port 9992]
+            Agent[Bytebot Agent<br/>Port 9991]
+            Desktop[Bytebot Desktop<br/>Port 9990]
+            Postgres[(PostgreSQL<br/>5432)]
+            Redis[(Redis<br/>6379)]
+            Chroma[(Chroma Vector DB<br/>8001)]
+            Exporter[(Redis Exporter<br/>9121)]
+          end
+          UI -->|HTTP/WebSocket| Agent
+          Agent -->|API Calls| Desktop
+          Agent -->|SQL| Postgres
+          Agent -->|Cache Ops| Redis
+          Agent -->|Vectors| Chroma
+          Redis -->|Metrics| Exporter
+          subgraph Network
+            Firewall[Firewall/NAT]
+          end
+          LocalHost -->|LAN Only| Firewall
+      </div>
+      <p class="note">Container connectivity with exposed ports. Harden with firewall rules or SSH tunnels for remote access.</p>
+    </section>
+  </div>
+
+  <footer>Generated: 2025-10-15 16:40:59</footer>
+
+  <!-- Mermaid JS -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    const root = document.body;
+    const tabs = document.querySelectorAll('.tab');
+    const panels = document.querySelectorAll('.panel');
+    tabs.forEach(t => t.addEventListener('click', () => {
+      tabs.forEach(x => x.classList.remove('active'));
+      panels.forEach(p => p.classList.remove('active'));
+      t.classList.add('active');
+      document.getElementById(t.dataset.tab).classList.add('active');
+      setTimeout(() => mermaid.run(), 0);
+    }));
+
+    // Theme toggle
+    document.getElementById('toggleTheme').addEventListener('click', () => {
+      const theme = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', theme);
+      // Rerender Mermaid with adjusted theme hint
+      setTimeout(() => mermaid.run(), 0);
+    });
+
+    // Initialize Mermaid
+    mermaid.initialize({ startOnLoad: true });
+    document.getElementById('rerender').addEventListener('click', () => mermaid.run());
+  </script>
+</body>
+</html>
