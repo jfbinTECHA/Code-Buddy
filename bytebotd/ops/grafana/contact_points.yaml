@@ -1,0 +1,24 @@
+apiVersion: 1
+
+contactPoints:
+  - name: bytebot-auto-recover
+    type: webhook
+    settings:
+      url: http://bytebot-agent:9990/api/ops/recover
+      httpMethod: POST
+      body: |
+        {
+          "action": "auto-recover",
+          "alert": "{{ .CommonAnnotations.summary }}",
+          "severity": "{{ .CommonLabels.severity }}",
+          "timestamp": "{{ .StartsAt }}"
+        }
+  - name: bytebot-discord-alerts
+    type: webhook
+    settings:
+      url: "${BYTEBOT_DISCORD_WEBHOOK}"
+      httpMethod: POST
+      body: |
+        {
+          "content": "🚨 **Bytebot Alert Fired**\n**Alert:** {{ .CommonAnnotations.summary }}\n**Severity:** {{ .CommonLabels.severity }}\n**Description:** {{ .CommonAnnotations.description }}\n**Time:** {{ .StartsAt }}"
+        }

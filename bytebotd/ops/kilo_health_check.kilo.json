@@ -1,0 +1,27 @@
+[
+  {
+    "id": "bytebot-health-check",
+    "name": "Bytebot Health Check",
+    "description": "Runs the unified health summary and reports results.",
+    "trigger": {
+      "type": "command",
+      "phrases": ["check bytebot health", "run health summary", "health report"]
+    },
+    "actions": [
+      { "type": "shell", "run": "python3 Code-Buddy/bytebotd/ops/bytebot_health.py" }
+    ],
+    "output": {
+      "display": "terminal",
+      "notify": true
+    }
+  },
+  {
+    "id": "bytebot-auto-recover",
+    "name": "Auto Recovery",
+    "description": "Restarts Bytebot containers after failed health check.",
+    "trigger": { "type": "condition", "on_fail_of": "bytebot-health-check" },
+    "actions": [
+      { "type": "shell", "run": "bash Code-Buddy/bytebotd/ops/recover_bytebot.sh" }
+    ]
+  }
+]

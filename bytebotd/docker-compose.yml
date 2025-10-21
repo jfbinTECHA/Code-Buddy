@@ -1,0 +1,57 @@
+version: "3.8"
+
+services:
+  bytebot-agent:
+    build:
+      context: ..
+      dockerfile: bytebotd/Dockerfile
+    ports:
+      - "9991:9991"
+    env_file:
+      - ./docker/.env
+    networks:
+      - bytebot-net
+
+  bytebot-ui:
+    image: nginx:latest
+    ports:
+      - "9992:80"
+    networks:
+      - bytebot-net
+
+  bytebot-desktop:
+    image: ubuntu:latest
+    command: sleep infinity
+    ports:
+      - "9990:9990"
+    networks:
+      - bytebot-net
+
+  infra-redis-1:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    networks:
+      - bytebot-net
+
+  bytebot-postgres:
+    image: postgres:16
+    environment:
+      - POSTGRES_USER=bytebot
+      - POSTGRES_PASSWORD=bytebot
+      - POSTGRES_DB=bytebot
+    ports:
+      - "5432:5432"
+    networks:
+      - bytebot-net
+
+  infra-chroma-1:
+    image: ghcr.io/chroma-core/chroma:latest
+    ports:
+      - "8001:8001"
+    networks:
+      - bytebot-net
+
+networks:
+  bytebot-net:
+    driver: bridge

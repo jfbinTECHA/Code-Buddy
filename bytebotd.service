@@ -1,0 +1,39 @@
+[Unit]
+Description=🧠 Bytebot Mission Control Dashboard
+After=network.target docker.service
+Requires=docker.service
+
+[Service]
+# --- BASIC SERVICE CONFIG ---
+Type=simple
+WorkingDirectory=/home/sysop/Code-Buddy/bytebotd
+ExecStart=/usr/bin/docker compose up --no-build
+ExecStop=/usr/bin/docker compose down
+Restart=always
+RestartSec=10
+TimeoutStartSec=60
+
+# --- ENVIRONMENT VARIABLES ---
+Environment=DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/YOUR_WEBHOOK_URL
+Environment=EMAIL_ALERT=admin@example.com
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+
+# --- LOGGING ---
+StandardOutput=append:/var/log/bytebotd.log
+StandardError=append:/var/log/bytebotd.err
+
+# --- RESOURCE LIMITS ---
+LimitNOFILE=4096
+LimitNPROC=1024
+
+# --- SECURITY HARDENING ---
+ProtectSystem=full
+ProtectHome=yes
+NoNewPrivileges=yes
+PrivateTmp=yes
+
+# --- AUTO-REPAIR ON FAILURE ---
+ExecStartPost=/home/sysop/Code-Buddy/bytebotd/repair_bytebot.sh
+
+[Install]
+WantedBy=multi-user.target

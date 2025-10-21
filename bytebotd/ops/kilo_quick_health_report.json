@@ -1,0 +1,14 @@
+{
+  "name": "Bytebot Quick Health Report",
+  "type": "task",
+  "commands": [
+    "echo '🧠 Bytebot Quick Health Report starting...'",
+    "status=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:9991/api/ops/health)",
+    "if [ \"$status\" -eq 200 ]; then port=9991; elif [ $(curl -s -o /dev/null -w '%{http_code}' http://localhost:9990/api/ops/health) -eq 200 ]; then port=9990; else echo '❌ No active Bytebot agent detected on 9991 or 9990.'; exit 1; fi",
+    "echo '✅ Agent responding on port '$port",
+    "health_output=$(python3 Code-Buddy/bytebotd/ops/bytebot_health.py)",
+    "if echo \"$health_output\" | grep -q '❌'; then if echo \"$health_output\" | grep -q 'FAIL'; then color=16711680; status_emoji='🔴 Critical'; else color=16744192; status_emoji='🟡 Partial'; fi; else color=65280; status_emoji='🟢 Healthy'; fi",
+    "if [ -n \"$BYTEBOT_DISCORD_WEBHOOK\" ]; then echo '📡 Sending Discord report...'; curl -H 'Content-Type: application/json' -X POST \"$BYTEBOT_DISCORD_WEBHOOK\" -d \"{\\\"embeds\\\":[{\\\"title\\\":\\\"Bytebot Quick Health\\\",\\\"description\\\":\\\"$status_emoji - Quick status update\\\",\\\"color\\\":$color,\\\"fields\\\":[{\\\"name\\\":\\\"Host\\\",\\\"value\\\":\\\"$(hostname)\\\"},{\\\"name\\\":\\\"Time\\\",\\\"value\\\":\\\"$(date '+%Y-%m-%d %H:%M:%S')\\\"},{\\\"name\\\":\\\"Summary\\\",\\\"value\\\":\\\"\\`\\`\\`$health_output\\`\\`\\`\\\"}]}]}\"; else echo '⚠️ BYTEBOT_DISCORD_WEBHOOK not set. Skipping webhook.'; fi",
+    "echo '✅ Quick health report complete.'"
+  ]
+}

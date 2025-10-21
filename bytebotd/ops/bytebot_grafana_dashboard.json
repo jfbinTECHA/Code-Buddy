@@ -1,0 +1,214 @@
+{
+  "id": null,
+  "title": "Bytebot Mission Control",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "🧠 Bytebot Uptime (Seconds)",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "targets": [
+        { "expr": "bytebot_uptime_seconds", "refId": "A" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 60 }
+            ]
+          },
+          "unit": "s"
+        }
+      }
+    },
+    {
+      "type": "gauge",
+      "title": "🧮 Memory Usage (MB)",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "targets": [
+        { "expr": "bytebot_memory_mb", "refId": "A" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 500 },
+              { "color": "red", "value": 1000 }
+            ]
+          },
+          "unit": "megabytes"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "⚙️ Request Latency (ms)",
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 6 },
+      "targets": [
+        { "expr": "bytebot_request_latency_ms", "refId": "A" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "ms"
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "📣 Last Alert Status",
+      "gridPos": { "x": 0, "y": 10, "w": 6, "h": 4 },
+      "targets": [
+        { "expr": "bytebot_last_alert_status", "refId": "A" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": 0 },
+              { "color": "red", "value": 1 }
+            ]
+          },
+          "mappings": [
+            { "type": "value", "options": { "0": { "text": "All Systems OK" }, "1": { "text": "Incident Active" } } }
+          ]
+        }
+      }
+    },
+    {
+      "type": "table",
+      "title": "🧾 Service Health Summary",
+      "gridPos": { "x": 6, "y": 10, "w": 6, "h": 4 },
+      "targets": [
+        { "expr": "bytebot_service_status", "refId": "A" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "steps": [
+              { "color": "red", "value": 0 },
+              { "color": "green", "value": 1 }
+            ]
+          }
+        }
+      },
+      "options": { "showHeader": true }
+    },
+    {
+      "type": "table",
+      "title": "🚨 Active Alerts (Alertmanager)",
+      "gridPos": { "x": 0, "y": 15, "w": 12, "h": 8 },
+      "targets": [
+        { "expr": "ALERTS{alertstate=\"firing\"}", "refId": "A" }
+      ],
+      "columns": [
+        {"text": "Alert", "value": "alertname"},
+        {"text": "Severity", "value": "severity"},
+        {"text": "Instance", "value": "instance"},
+        {"text": "Value", "value": "value"},
+        {"text": "Description", "value": "annotation_description"}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 1},
+              {"color": "red", "value": 2}
+            ]
+          }
+        }
+      },
+      "options": { "showHeader": true }
+    },
+    {
+      "type": "state-timeline",
+      "title": "🧩 Service Health Overview",
+      "gridPos": { "x": 12, "y": 15, "w": 12, "h": 8 },
+      "targets": [
+        { "expr": "up{job=~\"bytebot-agent|bytebot-ui|postgres|redis|chroma\"}", "refId": "A" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "continuous-GrYlRd" }
+        }
+      },
+      "options": { "legend": { "showLegend": true } }
+    },
+    {
+      "type": "timeseries",
+      "title": "📊 Alert Frequency Over Time",
+      "gridPos": { "x": 0, "y": 23, "w": 12, "h": 6 },
+      "targets": [
+        { "expr": "count_over_time(ALERTS{alertstate=\"firing\"}[5m])", "refId": "A" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" }
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "🔄 Recovery Operations",
+      "gridPos": { "x": 12, "y": 23, "w": 6, "h": 6 },
+      "targets": [
+        { "expr": "bytebot_recoveries_total", "refId": "A" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 5 },
+              { "color": "red", "value": 10 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "⚡ Recovery Actions Over Time",
+      "gridPos": { "x": 18, "y": 23, "w": 6, "h": 6 },
+      "targets": [
+        { "expr": "increase(bytebot_recoveries_total[5m])", "refId": "A" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "ops"
+        }
+      }
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "instance",
+        "type": "query",
+        "datasource": "Prometheus",
+        "query": "label_values(up, instance)",
+        "refresh": 1,
+        "current": { "text": "localhost:9991", "value": "localhost:9991" }
+      }
+    ]
+  },
+  "time": { "from": "now-15m", "to": "now" },
+  "timepicker": { "refresh_intervals": ["5s", "10s", "30s", "1m"] }
+}

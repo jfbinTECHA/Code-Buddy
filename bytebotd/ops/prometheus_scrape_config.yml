@@ -1,0 +1,4 @@
+  - job_name: 'bytebot'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['localhost:9991']

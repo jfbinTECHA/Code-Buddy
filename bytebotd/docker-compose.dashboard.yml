@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+  # Bytebot Mission Control Dashboard
+  bytebot-dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+    container_name: bytebot-dashboard
+    ports:
+      - "9993:9993"  # HTTP dashboard
+      - "9994:9994"  # WebSocket real-time updates
+    volumes:
+      - ./config:/app/config:ro
+      - ./ops:/app/ops:ro
+      - dashboard_data:/app/data
+      - /tmp:/tmp:rw  # For recovery logs
+    environment:
+      - PYTHONUNBUFFERED=1
+      - HEALTH_CONFIG_PATH=/app/config/health_config.json
+      - HISTORY_FILE_PATH=/app/data/health_history.json
+      - LOG_FILE_PATH=/var/log/bytebot-dashboard.log
+    restart: unless-stopped
+    depends_on:
+      - bytebot-infra-redis-1-1
+      - bytebot-infra-postgres-1-1
+      - bytebot-infra-chroma-1-1
+    networks:
+      - bytebot-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9993/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Redis for caching (if not already defined)
+  bytebot-infra-redis-1-1:
+    image: redis:7-alpine
+    container_name: bytebot-infra-redis-1-1
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - bytebot-network
+    command: redis-server --appendonly yes
+
+  # PostgreSQL for data persistence (if not already defined)
+  bytebot-infra-postgres-1-1:
+    image: postgres:15-alpine
+    container_name: bytebot-infra-postgres-1-1
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=bytebot
+      - POSTGRES_USER=bytebot
+      - POSTGRES_PASSWORD=bytebot123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - bytebot-network
+
+  # ChromaDB for vector storage (if not already defined)
+  bytebot-infra-chroma-1-1:
+    image: chromadb/chroma:latest
+    container_name: bytebot-infra-chroma-1-1
+    ports:
+      - "8000:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+    restart: unless-stopped
+    networks:
+      - bytebot-network
+
+volumes:
+  dashboard_data:
+    driver: local
+  redis_data:
+    driver: local
+  postgres_data:
+    driver: local
+  chroma_data:
+    driver: local
+
+networks:
+  bytebot-network:
+    driver: bridge

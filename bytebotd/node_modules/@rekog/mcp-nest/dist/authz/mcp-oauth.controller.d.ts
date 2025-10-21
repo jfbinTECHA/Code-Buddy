@@ -1,0 +1,78 @@
+import { Logger } from '@nestjs/common';
+import { Request as ExpressRequest, NextFunction, Response } from 'express';
+import { OAuthEndpointConfiguration, OAuthModuleOptions, OAuthUserProfile } from './providers/oauth-provider.interface';
+import { ClientService } from './services/client.service';
+import { JwtTokenService, TokenPair } from './services/jwt-token.service';
+import { IOAuthStore } from './stores/oauth-store.interface';
+interface OAuthCallbackRequest extends ExpressRequest {
+    user?: {
+        profile: OAuthUserProfile;
+        accessToken: string;
+        provider: string;
+    };
+}
+interface RequestWithRawBody extends ExpressRequest {
+    rawBody?: Buffer;
+    textBody?: string;
+}
+export declare function createMcpOAuthController(endpoints?: OAuthEndpointConfiguration, options?: {
+    disableWellKnownProtectedResourceMetadata?: boolean;
+    disableWellKnownAuthorizationServerMetadata?: boolean;
+}): {
+    new (options: OAuthModuleOptions, store: IOAuthStore, jwtTokenService: JwtTokenService, clientService: ClientService): {
+        readonly logger: Logger;
+        readonly serverUrl: string;
+        readonly isProduction: boolean;
+        readonly options: OAuthModuleOptions;
+        readonly store: IOAuthStore;
+        readonly jwtTokenService: JwtTokenService;
+        readonly clientService: ClientService;
+        parseRequestBody(body: any, req?: RequestWithRawBody): Record<string, any>;
+        captureRawBody(req: RequestWithRawBody, res: Response, next: NextFunction): void;
+        getProtectedResourceMetadata(): {
+            authorization_servers: string[];
+            resource: string;
+            scopes_supported: string[];
+            bearer_methods_supported: string[];
+            mcp_versions_supported: string[];
+        };
+        getAuthorizationServerMetadata(): {
+            issuer: string;
+            authorization_endpoint: string;
+            token_endpoint: string;
+            registration_endpoint: string;
+            response_types_supported: string[];
+            response_modes_supported: string[];
+            grant_types_supported: string[];
+            token_endpoint_auth_methods_supported: string[];
+            scopes_supported: string[];
+            revocation_endpoint: string;
+            code_challenge_methods_supported: string[];
+        };
+        registerClient(registrationDto: any): Promise<import("./stores/oauth-store.interface").OAuthClient>;
+        authorize(query: any, req: any, res: Response, next: NextFunction): Promise<void>;
+        handleProviderCallback(req: OAuthCallbackRequest, res: Response, next: NextFunction): void;
+        processAuthenticationSuccess(req: OAuthCallbackRequest, res: Response): Promise<void>;
+        exchangeToken(body: any, req: RequestWithRawBody, res: Response): Promise<TokenPair>;
+        processTokenExchange(parsedBody: Record<string, any>, req: RequestWithRawBody): Promise<TokenPair>;
+        extractClientCredentials(req: RequestWithRawBody, body: any): {
+            client_id: string;
+            client_secret?: string;
+        };
+        validateClientAuthentication(client: any, clientCredentials: {
+            client_id: string;
+            client_secret?: string;
+        }): void;
+        handleAuthorizationCodeGrant(code: string, code_verifier: string, _redirect_uri: string, clientCredentials: {
+            client_id: string;
+            client_secret?: string;
+        }): Promise<TokenPair>;
+        handleRefreshTokenGrant(refresh_token: string, clientCredentials: {
+            client_id: string;
+            client_secret?: string;
+        }): Promise<TokenPair>;
+        validatePKCE(code_verifier: string, code_challenge: string, method: string): boolean;
+    };
+};
+export {};
+//# sourceMappingURL=mcp-oauth.controller.d.ts.map

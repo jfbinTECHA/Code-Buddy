@@ -1,0 +1,20 @@
+groups:
+  - name: bytebot.rules
+    rules:
+      - alert: BytebotServiceDown
+        expr: up{job="bytebot-agent"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Bytebot Agent service down"
+          description: "The bytebot-agent has been unreachable for more than 1 minute."
+
+      - alert: HighMemoryUsage
+        expr: process_resident_memory_bytes{job="bytebot-agent"} > 500000000
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage detected"
+          description: "Bytebot Agent is using more than 500MB of memory."

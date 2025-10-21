@@ -1,0 +1,20 @@
+{
+  "name": "Bytebot Health Summary",
+  "type": "task",
+  "commands": [
+    "health_output=$(python3 Code-Buddy/bytebotd/ops/bytebot_health.py)",
+    "if echo \"$health_output\" | grep -q \"❌\"; then",
+    "  if echo \"$health_output\" | grep -q \"FAIL\"; then",
+    "    color=16711680",
+    "    status_emoji=\"🔴 Critical\"",
+    "  else",
+    "    color=16744192",
+    "    status_emoji=\"🟡 Partial\"",
+    "  fi",
+    "else",
+    "  color=65280",
+    "  status_emoji=\"🟢 Healthy\"",
+    "fi",
+    "curl -H \"Content-Type: application/json\" -X POST \"$BYTEBOT_DISCORD_WEBHOOK\" -d \"{\\\"embeds\\\": [{\\\"title\\\": \\\"Bytebot Health Summary\\\", \\\"description\\\": \\\"$status_emoji | Automated status report from Kilo\\\", \\\"color\\\": $color, \\\"fields\\\": [{\\\"name\\\": \\\"Host\\\", \\\"value\\\": \\\"$(hostname)\\\", \\\"inline\\\": true}, {\\\"name\\\": \\\"Timestamp\\\", \\\"value\\\": \\\"$(date '+%Y-%m-%d %H:%M:%S')\\\", \\\"inline\\\": true}, {\\\"name\\\": \\\"Health Output\\\", \\\"value\\\": \\\"\\\\\\`\\\\\\`\\\\\\`${health_output}\\\\\\`\\\\\\`\\\\\\`\\\"}]}}\" -s -o /dev/null && echo '✅ Health summary sent to Discord.' || echo '⚠️ Failed to post health summary to Discord.'"
+  ]
+}

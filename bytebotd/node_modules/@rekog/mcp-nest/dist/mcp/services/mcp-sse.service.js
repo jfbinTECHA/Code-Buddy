@@ -1,0 +1,96 @@
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var McpSseService_1;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.McpSseService = void 0;
+const common_1 = require("@nestjs/common");
+const core_1 = require("@nestjs/core");
+const mcp_js_1 = require("@modelcontextprotocol/sdk/server/mcp.js");
+const sse_js_1 = require("@modelcontextprotocol/sdk/server/sse.js");
+const capabilities_builder_1 = require("../utils/capabilities-builder");
+const mcp_executor_service_1 = require("./mcp-executor.service");
+const mcp_registry_service_1 = require("./mcp-registry.service");
+const sse_ping_service_1 = require("./sse-ping.service");
+const normalize_endpoint_1 = require("../utils/normalize-endpoint");
+const adapters_1 = require("../adapters");
+let McpSseService = McpSseService_1 = class McpSseService {
+    constructor(options, mcpModuleId, applicationConfig, moduleRef, toolRegistry, pingService) {
+        this.options = options;
+        this.mcpModuleId = mcpModuleId;
+        this.applicationConfig = applicationConfig;
+        this.moduleRef = moduleRef;
+        this.toolRegistry = toolRegistry;
+        this.pingService = pingService;
+        this.logger = new common_1.Logger(McpSseService_1.name);
+        this.transports = new Map();
+        this.mcpServers = new Map();
+    }
+    initialize() {
+        this.pingService.configure({
+            pingEnabled: this.options.sse?.pingEnabled,
+            pingIntervalMs: this.options.sse?.pingIntervalMs,
+        });
+    }
+    async createSseConnection(rawReq, rawRes, messagesEndpoint, apiPrefix) {
+        const adapter = adapters_1.HttpAdapterFactory.getAdapter(rawReq, rawRes);
+        const res = adapter.adaptResponse(rawRes);
+        const transport = new sse_js_1.SSEServerTransport((0, normalize_endpoint_1.normalizeEndpoint)(`${apiPrefix}/${this.applicationConfig.getGlobalPrefix()}/${messagesEndpoint}`), res.raw);
+        const sessionId = transport.sessionId;
+        const capabilities = (0, capabilities_builder_1.buildMcpCapabilities)(this.mcpModuleId, this.toolRegistry, this.options);
+        this.logger.debug('Built MCP capabilities:', capabilities);
+        const mcpServer = new mcp_js_1.McpServer({ name: this.options.name, version: this.options.version }, {
+            capabilities,
+            instructions: this.options.instructions || '',
+        });
+        this.transports.set(sessionId, transport);
+        this.mcpServers.set(sessionId, mcpServer);
+        this.pingService.registerConnection(sessionId, transport, res);
+        transport.onclose = () => {
+            this.transports.delete(sessionId);
+            this.mcpServers.delete(sessionId);
+            this.pingService.removeConnection(sessionId);
+        };
+        await mcpServer.connect(transport);
+    }
+    async handleMessage(rawReq, rawRes, body) {
+        const adapter = adapters_1.HttpAdapterFactory.getAdapter(rawReq, rawRes);
+        const req = adapter.adaptRequest(rawReq);
+        const res = adapter.adaptResponse(rawRes);
+        const sessionId = req.query.sessionId;
+        const transport = this.transports.get(sessionId);
+        if (!transport) {
+            return res.status(404).send('Session not found');
+        }
+        const mcpServer = this.mcpServers.get(sessionId);
+        if (!mcpServer) {
+            return res.status(404).send('MCP server not found for session');
+        }
+        const contextId = core_1.ContextIdFactory.getByRequest(req);
+        const executor = await this.moduleRef.resolve(mcp_executor_service_1.McpExecutorService, contextId);
+        executor.registerRequestHandlers(mcpServer, req);
+        await transport.handlePostMessage(req.raw, res.raw, body);
+    }
+};
+exports.McpSseService = McpSseService;
+exports.McpSseService = McpSseService = McpSseService_1 = __decorate([
+    (0, common_1.Injectable)(),
+    __param(0, (0, common_1.Inject)('MCP_OPTIONS')),
+    __param(1, (0, common_1.Inject)('MCP_MODULE_ID')),
+    __param(5, (0, common_1.Inject)(sse_ping_service_1.SsePingService)),
+    __metadata("design:paramtypes", [Object, String, core_1.ApplicationConfig,
+        core_1.ModuleRef,
+        mcp_registry_service_1.McpRegistryService,
+        sse_ping_service_1.SsePingService])
+], McpSseService);
+//# sourceMappingURL=mcp-sse.service.js.map

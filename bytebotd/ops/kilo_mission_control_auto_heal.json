@@ -1,0 +1,33 @@
+{
+  "name": "Bytebot Mission Control Auto-Heal",
+  "type": "scheduled_task",
+  "schedule": "*/10 * * * *",
+  "commands": [
+    "echo '🩺 [$(date)] Running Mission Control Auto-Heal...'",
+    "fail_count_file=/tmp/bytebot_failcount.txt",
+    "port=9991; status=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:$port/api/ops/health)",
+    "if [ \"$status\" -ne 200 ]; then port=9990; status=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:$port/api/ops/health); fi",
+    "if [ \"$status\" -eq 200 ]; then",
+    "  echo '✅ Agent online at port '$port;",
+    "  echo 0 > $fail_count_file;",
+    "else",
+    "  echo '❌ Agent unreachable — recording failure.';",
+    "  count=$(cat $fail_count_file 2>/dev/null || echo 0); count=$((count+1)); echo $count > $fail_count_file;",
+    "  if [ $count -ge 2 ]; then",
+    "    echo '🚨 Two consecutive failures detected — initiating auto-recovery...';",
+    "    bash Code-Buddy/bytebotd/ops/recover_bytebot.sh;",
+    "    echo 0 > $fail_count_file;",
+    "    echo '⏳ Rechecking after recovery...';",
+    "    sleep 5;",
+    "    retry=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:$port/api/ops/health);",
+    "    if [ \"$retry\" -eq 200 ]; then echo '✅ Auto-Heal successful — Bytebot recovered.';",
+    "      if [ -n \"$BYTEBOT_DISCORD_WEBHOOK\" ]; then curl -s -H 'Content-Type: application/json' -d '{\"embeds\":[{\"title\":\"🩺 Bytebot Auto-Heal Successful\",\"description\":\"Bytebot recovered automatically after two consecutive failures.\",\"color\":3066993}]}' \"$BYTEBOT_DISCORD_WEBHOOK\" >/dev/null; fi;",
+    "    else",
+    "      echo '🚨 Auto-Heal failed — manual intervention required.';",
+    "      if [ -n \"$BYTEBOT_DISCORD_WEBHOOK\" ]; then curl -s -H 'Content-Type: application/json' -d '{\"embeds\":[{\"title\":\"🚨 Bytebot Auto-Heal Failed\",\"description\":\"Bytebot could not recover after repeated failures.\",\"color\":15158332}]}' \"$BYTEBOT_DISCORD_WEBHOOK\" >/dev/null; fi;",
+    "    fi;",
+    "  fi;",
+    "fi",
+    "echo '📡 [$(date)] Auto-Heal cycle complete.'"
+  ]
+}

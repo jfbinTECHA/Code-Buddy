@@ -1,0 +1,35 @@
+{
+  "services": [
+    {
+      "name": "bytebot-agent",
+      "port": 3000,
+      "health_endpoint": "/health"
+    },
+    {
+      "name": "bytebot-ui",
+      "port": 8080,
+      "health_endpoint": "/health"
+    },
+    {
+      "name": "bytebot-desktop",
+      "port": 6080,
+      "health_endpoint": "/health"
+    },
+    {
+      "name": "bytebot-infra-redis-1-1",
+      "port": 6379,
+      "health_endpoint": "/health"
+    },
+    {
+      "name": "bytebot-infra-postgres-1-1",
+      "port": 5432,
+      "health_endpoint": "/health"
+    },
+    {
+      "name": "bytebot-infra-chroma-1-1",
+      "port": 8000,
+      "health_endpoint": "/health"
+    }
+  ],
+  "thresholds": { "restart_failures": 5, "cpu_max": 90, "mem_max": 90 }
+}

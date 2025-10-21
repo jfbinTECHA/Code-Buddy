@@ -1,0 +1,99 @@
+version: "3.9"
+
+services:
+  bytebot-dashboard:
+    build: ./bytebotd/dashboard
+    container_name: bytebot-dashboard
+    restart: unless-stopped
+    ports:
+      - "9993:9993"
+      - "9994:9994"
+    volumes:
+      - ./bytebotd:/app
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - bytebot-redis
+      - bytebot-postgres
+      - bytebot-prometheus
+    environment:
+      - PYTHONUNBUFFERED=1
+    networks:
+      - bytebot-net
+
+  bytebot-redis:
+    image: redis:7-alpine
+    container_name: bytebot-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - bytebot-net
+
+  bytebot-postgres:
+    image: postgres:16-alpine
+    container_name: bytebot-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bytebot
+      POSTGRES_PASSWORD: bytebot
+      POSTGRES_DB: bytebotdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    networks:
+      - bytebot-net
+
+  bytebot-prometheus:
+    image: prom/prometheus:latest
+    container_name: bytebot-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    networks:
+      - bytebot-net
+
+  # --- Reverse proxy ---
+  bytebot-nginx:
+    image: nginx:1.27-alpine
+    container_name: bytebot-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/certs:/etc/letsencrypt
+      - ./nginx/www:/var/www/certbot
+    depends_on:
+      - bytebot-dashboard
+    networks:
+      - bytebot-net
+
+  # --- Certbot auto-renewal service ---
+  certbot:
+    image: certbot/certbot:latest
+    container_name: bytebot-certbot
+    restart: unless-stopped
+    volumes:
+      - ./nginx/certs:/etc/letsencrypt
+      - ./nginx/www:/var/www/certbot
+    entrypoint: >
+      sh -c "trap exit TERM; while :;
+               certbot renew --webroot -w /var/www/certbot --quiet --agree-tos;
+               sleep 12h;
+             done"
+    networks:
+      - bytebot-net
+
+networks:
+  bytebot-net:
+    driver: bridge
+
+volumes:
+  redis-data:
+  pg-data:

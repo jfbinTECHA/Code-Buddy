@@ -18,6 +18,9 @@ async function bootstrap() {
     credentials: true,
   });
 
+  // Expose /health at root level for external monitoring
+  app.use('/health', (req, res) => res.json({ status: 'ok' }));
+
   const wsProxy = createProxyMiddleware({
     target: 'http://localhost:6080',
     ws: true,
@@ -25,7 +28,7 @@ async function bootstrap() {
     pathRewrite: { '^/websockify': '/' },
   });
   app.use('/websockify', express.raw({ type: '*/*' }), wsProxy);
-  const server = await app.listen(9990);
+  const server = await app.listen(process.env.PORT || 9990, '0.0.0.0');
 
   // Selective upgrade routing
   server.on('upgrade', (req, socket, head) => {

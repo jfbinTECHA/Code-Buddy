@@ -1,0 +1,48 @@
+groups:
+  - name: bytebot_alerts
+    interval: 15s
+    rules:
+      - alert: BytebotAgentDown
+        expr: up{job="bytebot"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Bytebot Agent container is down"
+          description: "Prometheus detected the bytebot-agent service is not responding for 1 minute."
+
+      - alert: BytebotUINotResponding
+        expr: up{job="bytebot-ui"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Bytebot UI is not responding"
+          description: "The bytebot-ui frontend has stopped responding to health checks."
+
+      - alert: BytebotHighMemoryUsage
+        expr: process_resident_memory_bytes{job="bytebot"} > 500000000
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage detected in Bytebot Agent"
+          description: "Bytebot Agent memory usage exceeded 500MB for over 2 minutes."
+
+      - alert: BytebotRestartLoop
+        expr: changes(process_start_time_seconds{job="bytebot"}[5m]) > 3
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Bytebot Agent restarting frequently"
+          description: "The agent container has restarted multiple times within 5 minutes."
+
+      - alert: BytebotLatencyHigh
+        expr: http_request_duration_seconds_sum{job="bytebot"} / http_request_duration_seconds_count{job="bytebot"} > 1.5
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High request latency detected in Bytebot Agent"
+          description: "Average response latency is above 1.5 seconds for more than 2 minutes."

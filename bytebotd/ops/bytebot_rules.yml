@@ -1,0 +1,21 @@
+groups:
+  - name: bytebot_runtime_metrics
+    interval: 5s
+    rules:
+      # ✅ Agent Health Status (1 = OK, 0 = DOWN)
+      - record: bytebot_agent_status
+        expr: |
+          up{job="bytebot-agent"} == 1
+
+      # ✅ Memory Usage (MB)
+      - record: bytebot_memory_usage_mb
+        expr: |
+          (process_resident_memory_bytes{job="bytebot-agent"} / 1024 / 1024)
+
+      # ✅ Request Latency (ms)
+      - record: bytebot_request_latency_ms
+        expr: |
+          rate(http_request_duration_seconds_sum{job="bytebot-agent"}[1m])
+          /
+          rate(http_request_duration_seconds_count{job="bytebot-agent"}[1m])
+          * 1000

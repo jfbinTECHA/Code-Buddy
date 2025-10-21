@@ -1,0 +1,21 @@
+{
+  "name": "Bytebot Mission Control Sync",
+  "type": "task",
+  "commands": [
+    "echo '🛰️ Starting Bytebot Mission Control Sync...'",
+    "echo '📡 Checking agent status (9991/9990)...'",
+    "port=9991; status=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:$port/api/ops/health)",
+    "if [ \"$status\" -ne 200 ]; then port=9990; status=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:$port/api/ops/health); fi",
+    "if [ \"$status\" -eq 200 ]; then echo '✅ Agent online at port '$port; else echo '❌ Agent offline — triggering quick health check fallback'; fi",
+    "echo '🧠 Running quick health metrics...'",
+    "python3 Code-Buddy/bytebotd/ops/bytebot_health.py > /tmp/bytebot_health.log",
+    "uptime=$(grep 'bytebot-agent' /tmp/bytebot_health.log | awk '{print $NF}')",
+    "mem=$(grep 'bytebot-ui' /tmp/bytebot_health.log | awk '{print $NF}')",
+    "timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+    "echo '📈 Sending live metrics heartbeat to /metrics endpoint...'",
+    "curl -s -X POST http://localhost:$port/api/metrics/update -H 'Content-Type: application/json' -d '{\"timestamp\":\"'$timestamp'\",\"uptime\":\"'$uptime'\",\"memory\":\"'$mem'\"}' >/dev/null 2>&1 || echo '⚠️ Metrics endpoint not writable (fallback mode)'",
+    "echo '📡 Sending mission sync summary to Discord webhook (if configured)...'",
+    "if [ -n \"$BYTEBOT_DISCORD_WEBHOOK\" ]; then curl -s -H 'Content-Type: application/json' -d '{\"embeds\":[{\"title\":\"🛰️ Bytebot Mission Control Sync\",\"description\":\"Agent status: '$status' on port '$port'\\nUptime: '$uptime'\\nMemory: '$mem'\\nTime: '$timestamp'\",\"color\":3066993}]}' \"$BYTEBOT_DISCORD_WEBHOOK\" >/dev/null; else echo '⚠️ No Discord webhook configured.'; fi",
+    "echo '✅ Mission Control Sync complete.'"
+  ]
+}

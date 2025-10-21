@@ -1,0 +1,10 @@
+{
+  "name": "Bytebot Verify and Recover (Local)",
+  "type": "task",
+  "commands": [
+    "echo '🔍 Checking for ops controller files (depth ≤ 3)...'",
+    "docker exec bytebot-desktop timeout 10 find /bytebot -maxdepth 3 -type f -iname '*ops*' 2>/dev/null | grep -v 'node_modules' | grep -v '.cache' | grep -v 'dist' || echo '⚠️  No matching files or search timed out.'",
+    "echo '✅ File scan done. Now testing the Bytebot Agent health endpoint...'",
+    "bash -c '\nstatus=$(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:9991/health)\nif [ \"$status\" -eq 200 ]; then\n  echo \"✅ Bytebot Agent responding on port 9991 (HTTP 200)\"\n  port=9991\nelse\n  status2=$(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:9990/health)\n  if [ \"$status2\" -eq 200 ]; then\n    echo \"✅ Bytebot Agent responding on port 9990 (HTTP 200)\"\n    port=9990\n  else\n    echo \"❌ Could not reach Bytebot Agent on ports 9991 or 9990.\"\n    echo \"🩺 Attempting local recovery...\"\n    bash Code-Buddy/bytebotd/ops/recover_bytebot.sh\n    echo \"⏳ Rechecking after recovery...\"\n    sleep 5\n    retry=$(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:9991/health)\n    if [ \"$retry\" -eq 200 ]; then echo \"✅ Bytebot Agent recovered on port 9991.\"; exit 0; fi\n    retry2=$(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:9990/health)\n    if [ \"$retry2\" -eq 200 ]; then echo \"✅ Bytebot Agent recovered on port 9990.\"; exit 0; fi\n    echo \"🚨 Recovery attempt failed. Manual intervention required.\"; exit 1\n  fi\nfi\necho \"📡 Bytebot Agent verified operational on port $port. Mission Control standing by.\"\n'"
+  ]
+}

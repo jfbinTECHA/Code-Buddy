@@ -1,0 +1,42 @@
+import { ServerCapabilities } from '@modelcontextprotocol/sdk/types.js';
+import { CanActivate, ModuleMetadata, Type } from '@nestjs/common';
+export declare enum McpTransportType {
+    SSE = "sse",
+    STREAMABLE_HTTP = "streamable-http",
+    STDIO = "stdio"
+}
+export interface McpOptions {
+    name: string;
+    version: string;
+    capabilities?: ServerCapabilities;
+    instructions?: string;
+    transport?: McpTransportType | McpTransportType[];
+    sseEndpoint?: string;
+    messagesEndpoint?: string;
+    mcpEndpoint?: string;
+    globalApiPrefix?: never;
+    apiPrefix?: string;
+    guards?: Type<CanActivate>[];
+    decorators?: ClassDecorator[];
+    sse?: {
+        pingEnabled?: boolean;
+        pingIntervalMs?: number;
+    };
+    streamableHttp?: {
+        enableJsonResponse?: boolean;
+        sessionIdGenerator?: () => string;
+        statelessMode?: boolean;
+    };
+}
+export type McpAsyncOptions = Omit<McpOptions, 'transport'>;
+export interface McpOptionsFactory {
+    createMcpOptions(): Promise<McpAsyncOptions> | McpAsyncOptions;
+}
+export interface McpModuleAsyncOptions extends Pick<ModuleMetadata, 'imports'> {
+    useExisting?: Type<McpOptionsFactory>;
+    useClass?: Type<McpOptionsFactory>;
+    useFactory?: (...args: any[]) => Promise<McpAsyncOptions> | McpAsyncOptions;
+    inject?: any[];
+    extraProviders?: any[];
+}
+//# sourceMappingURL=mcp-options.interface.d.ts.map
