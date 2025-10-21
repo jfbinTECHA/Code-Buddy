@@ -57,6 +57,19 @@ services:
     networks:
       - bytebot-net
 
+  bytebot-agent:
+    build:
+      context: ../packages/bytebot-agent
+      dockerfile: Dockerfile.python
+    container_name: bytebot-agent
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    networks:
+      - bytebot-net
+
   # --- Reverse proxy ---
   bytebot-nginx:
     image: nginx:1.27-alpine
